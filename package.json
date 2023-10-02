@@ -1,0 +1,46 @@
+{
+  "name": "movie-explorer-api",
+  "version": "1.0.0",
+  "description": "Back-End part of diplom",
+  "main": "app.js",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "celebrate": "^15.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-winston": "^4.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0",
+    "validator": "^13.11.0",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.28.1",
+    "nodemon": "^3.0.1"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node_modules/.bin/nodemon app.js --watch server",
+    "lint": "npx eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KrisArtyukova/movies-explorer-api.git"
+  },
+  "keywords": [
+    "yandex",
+    "praktikum",
+    "pr13",
+    "node.js",
+    "mongodb"
+  ],
+  "author": "Kristina",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KrisArtyukova/movies-explorer-api/issues"
+  },
+  "homepage": "https://github.com/KrisArtyukova/movies-explorer-api#readme"
+}
