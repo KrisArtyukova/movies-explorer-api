@@ -2,16 +2,15 @@ const express = require('express');
 const mongoose = require('mongoose').default;
 const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
-const { login, createUser } = require('./controllers/users');
 const router = require('./routes');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const cors = require('./middlewares/cors');
 require('dotenv').config();
 
-const { PORT = 3000 } = process.env;
+const { PORT = 3000, DB_NAME = 'mongodb://localhost:27017/bitfilmsdb' } = process.env;
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/bitfilmsdb', {
+mongoose.connect(DB_NAME, {
   useNewUrlParser: true,
 });
 app.use(cors);
@@ -24,8 +23,6 @@ app.get('/crash-test', () => {
     throw new Error('Сервер сейчас упадёт');
   }, 0);
 });
-app.post('/signup', createUser);
-app.post('/signin', login);
 
 app.use(router);
 

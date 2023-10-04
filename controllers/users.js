@@ -1,9 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const BadRequestError = require('../errors/bad-request-err');
 const ConflictError = require('../errors/conflict-err');
 const { Created } = require('../errors/errorCodes');
+const UnauthorizedError = require('../errors/unauthorized-err');
+const BadRequestError = require('../errors/bad-request-err');
 
 const getUser = (req, res, next) => {
   User.findById(req.user._id)
@@ -24,11 +25,13 @@ const createUser = (req, res, next) => {
     }))
     .then((user) => {
       res.status(Created);
-      res.send({ data: { user } });
+      res.send({ data: { name: user.name, email: user.email } });
     })
     .catch((error) => {
       if (error.code === 11000) {
-        throw new ConflictError('Такой email уже существует');
+        next(new ConflictError('Такой email уже существует'));
+      } else if (error.name === 'ValidationError') {
+        next(new BadRequestError(`${Object.values(error.errors).map((e) => e.message).join(', ')}`));
       }
       next(error);
     });
@@ -36,10 +39,17 @@ const createUser = (req, res, next) => {
 
 const updateUser = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, {
-    name: req.body.name, about: req.body.about,
+    name: req.body.name, email: req.body.email,
   }, { new: true, runValidators: true })
     .then((user) => (res.send({ data: user })))
-    .catch(next);
+    .catch((error) => {
+      if (error.code === 11000) {
+        next(new ConflictError('Данный e-mail уже используется'));
+      } else if (error.name === 'ValidationError') {
+        next(new BadRequestError(`${Object.values(error.errors).map((e) => e.message).join(', ')}`));
+      }
+      next(error);
+    });
 };
 
 const login = (req, res, next) => {
@@ -47,19 +57,21 @@ const login = (req, res, next) => {
 
   User.findOne({ email })
     .select('+password')
+    // eslint-disable-next-line consistent-return
     .then((user) => {
       if (!user) {
-        throw new BadRequestError('Неправильные почта или пароль');
+        next(new UnauthorizedError('Неправильные почта или пароль'));
+      } else {
+        return bcrypt.compare(password, user.password)
+          // eslint-disable-next-line consistent-return
+          .then((matched) => {
+            if (!matched) {
+              next(new UnauthorizedError('Неправильные почта или пароль'));
+            } else {
+              return user;
+            }
+          });
       }
-
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            throw new BadRequestError('Неправильные почта или пароль');
-          }
-
-          return user;
-        });
     })
     .then((user) => {
       const { NODE_ENV, JWT_SECRET } = process.env;

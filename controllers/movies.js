@@ -1,40 +1,80 @@
 const Movie = require('../models/movie');
-const { errorHandler } = require('../errors/errorHandler');
+const { defaultErrorMessages, errorHandler } = require('../errors/errorHandler');
+const BadRequestError = require('../errors/bad-request-err');
 const {
-  NotFound, NotFoundError, InternalServerError, Created,
+  NotFoundErrorCode, InternalServerErrorCode, Created,
 } = require('../errors/errorCodes');
-const { defaultErrorMessages } = require('../errors/errorHandler');
+const ForbiddenError = require('../errors/forbidden-err');
+const NotFoundError = require('../errors/not-found-err');
 
 const getMovies = (req, res) => {
-  Movie.find({})
+  const owner = req.user._id;
+
+  Movie.find({ owner })
     .populate(['owner'])
     .then((movie) => res.send({ data: movie }))
     .catch((err) => errorHandler(err, res, {
       ...defaultErrorMessages,
-      [NotFoundError]: 'Фильмы не найдены',
-      [InternalServerError]: 'Произошла ошибка при получении фильмов',
+      [NotFoundErrorCode]: 'Фильмы не найдены',
+      [InternalServerErrorCode]: 'Произошла ошибка при получении фильмов',
     }));
 };
 
-const deleteMovie = (req, res) => {
-  Movie.findByIdAndRemove(req.params.movieId)
+const deleteMovie = (req, res, next) => {
+  const owner = req.user._id;
+  const { movieId } = req.params;
+
+  Movie.findById(movieId)
     .then((movie) => {
       if (!movie) {
-        res.status(NotFound).send({ message: 'Фильм не найден' });
-      } else {
-        res.send({ data: movie });
+        next(new NotFoundError('Фильм не найден'));
+        return;
       }
+
+      if (movie.owner !== owner) {
+        next(new ForbiddenError('Фильм не найден'));
+        return;
+      }
+      Movie.findByIdAndRemove(req.params.movieId)
+        .then((removedMovie) => {
+          res.status(200).send({ data: removedMovie });
+        });
     })
     .catch((err) => errorHandler(err, res, {
       ...defaultErrorMessages,
-      [NotFoundError]: 'Фильмы не найдены',
-      [InternalServerError]: 'Произошла ошибка при удалении фильма',
+      [NotFoundErrorCode]: 'Фильмы не найдены',
+      [InternalServerErrorCode]: 'Произошла ошибка при удалении фильма',
     }));
 };
 
-const createMovie = (req, res) => {
-  const { name, link } = req.body;
-  Movie.create({ name, link, owner: req.user._id })
+const createMovie = (req, res, next) => {
+  const {
+    country,
+    director,
+    duration,
+    year,
+    description,
+    image,
+    trailerLink,
+    nameRU,
+    nameEN,
+    thumbnail,
+    movieId,
+  } = req.body;
+  Movie.create({
+    country,
+    director,
+    duration,
+    year,
+    description,
+    image,
+    trailerLink,
+    nameRU,
+    nameEN,
+    thumbnail,
+    movieId,
+    owner: req.user._id,
+  })
     .then((movie) => {
       movie
         .populate('owner')
@@ -43,11 +83,17 @@ const createMovie = (req, res) => {
           res.send({ data: movie });
         });
     })
-    .catch((err) => errorHandler(err, res, {
-      ...defaultErrorMessages,
-      [NotFoundError]: 'Не найдено',
-      [InternalServerError]: 'Произошла ошибка при создании фильма',
-    }));
+    .catch((error) => {
+      if (error.name === 'ValidationError') {
+        next(new BadRequestError(`${Object.values(error.errors).map((e) => e.message).join(', ')}`));
+      } else {
+        errorHandler(error, res, {
+          ...defaultErrorMessages,
+          [NotFoundErrorCode]: 'Не найдено',
+          [InternalServerErrorCode]: 'Произошла ошибка при создании фильма',
+        });
+      }
+    });
 };
 
 module.exports = {

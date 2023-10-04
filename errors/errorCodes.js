@@ -1,15 +1,17 @@
 const Created = 201;
-const InternalServerErrorCode = 500;
 const BadRequestErrorCode = 400;
-const Unauthorized = 401;
+const UnauthorizedErrorCode = 401;
+const ForbiddenErrorCode = 403;
 const NotFoundErrorCode = 404;
 const ConflictErrorCode = 409;
+const InternalServerErrorCode = 500;
 
 module.exports = {
   Created,
   InternalServerErrorCode,
   BadRequestErrorCode,
-  Unauthorized,
+  UnauthorizedErrorCode,
   NotFoundErrorCode,
   ConflictErrorCode,
+  ForbiddenErrorCode,
 };

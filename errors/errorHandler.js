@@ -1,25 +1,22 @@
-const {
-  BadRequest, CastError, InternalServerError, NotFound, ValidationError, NotFoundError,
-} = require('./errorCodes');
+const BadRequestError = require('./bad-request-err');
+const NotFoundError = require('./not-found-err');
+const InternalServerError = require('./internal-server-err');
+const { BadRequestErrorCode } = require('./errorCodes');
 
 const defaultErrorMessages = {
-  [CastError]: 'Некорректный id',
-  [ValidationError]: 'Переданы некорректные данные',
+  [BadRequestErrorCode]: 'Некорректный id',
 };
 
-const errorHandler = (err, res, errorMessage) => {
+const errorHandler = (err, res, errorMessage, next) => {
   switch (err.name) {
-    case CastError:
-      res.status(BadRequest).send({ message: errorMessage[CastError] });
-      return;
-    case ValidationError:
-      res.status(BadRequest).send({ message: errorMessage[ValidationError] });
+    case BadRequestErrorCode:
+      next(new BadRequestError(errorMessage[err.name]));
       return;
     case NotFoundError:
-      res.status(NotFound).send({ message: errorMessage[NotFoundError] });
+      next(new NotFoundError(errorMessage[err.name]));
       return;
     default:
-      res.status(InternalServerError).send({ message: errorMessage[InternalServerError] });
+      next(new InternalServerError(errorMessage[err.name]));
   }
 };
 
