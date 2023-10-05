@@ -1,5 +1,7 @@
 const { celebrate, Joi } = require('celebrate');
 
+const urlValidationPattern = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/;
+
 const loginValidation = celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
@@ -29,18 +31,18 @@ const createMovieValidation = celebrate({
     duration: Joi.number().required(),
     year: Joi.string().required(),
     description: Joi.string().required(),
-    image: Joi.string().required().uri(),
-    trailerLink: Joi.string().required().uri(),
+    image: Joi.string().pattern(urlValidationPattern),
+    trailerLink: Joi.string().pattern(urlValidationPattern),
     nameRU: Joi.string().required(),
     nameEN: Joi.string().required(),
-    thumbnail: Joi.string().required().uri(),
+    thumbnail: Joi.string().pattern(urlValidationPattern),
     movieId: Joi.number().required(),
   }),
 });
 
 const deleteMovieValidation = celebrate({
-  query: Joi.object().keys({
-    movieId: Joi.number().required(),
+  params: Joi.object().keys({
+    movieId: Joi.string().length(24).hex().required(),
   }),
 });
 
@@ -50,4 +52,5 @@ module.exports = {
   updateUserValidation,
   createMovieValidation,
   deleteMovieValidation,
+  urlValidationPattern,
 };

@@ -4,6 +4,7 @@ const movies = require('./movies');
 const signin = require('./signin');
 const signup = require('./signup');
 const auth = require('../middlewares/auth');
+const { notFound } = require('./requestHandlers/notFound');
 
 const router = express.Router();
 
@@ -12,6 +13,6 @@ router
   .use('/', signup)
   .use('/users', auth, users)
   .use('/movies', auth, movies)
-  .use('*', (req, res) => res.status(404).send({ message: 'Не найдено' }));
+  .use('*', notFound);
 
 module.exports = router;

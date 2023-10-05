@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { urlValidationPattern } = require('../utils/validations');
 
 const movieSchema = new mongoose.Schema({
   country: {
@@ -26,7 +27,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/.test(v);
+        return urlValidationPattern.test(v);
       },
       message: (props) => `${props.value} некорректная ссылка!`,
     },
@@ -36,7 +37,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/.test(v);
+        return urlValidationPattern.test(v);
       },
       message: (props) => `${props.value} некорректная ссылка!`,
     },
@@ -46,7 +47,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/.test(v);
+        return urlValidationPattern.test(v);
       },
       message: (props) => `${props.value} некорректная ссылка!`,
     },

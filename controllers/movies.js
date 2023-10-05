@@ -1,23 +1,32 @@
 const Movie = require('../models/movie');
-const { defaultErrorMessages, errorHandler } = require('../errors/errorHandler');
-const BadRequestError = require('../errors/bad-request-err');
+const { errorHandler } = require('../errors/errorHandler');
 const {
-  NotFoundErrorCode, InternalServerErrorCode, Created,
+  Created,
 } = require('../errors/errorCodes');
 const ForbiddenError = require('../errors/forbidden-err');
 const NotFoundError = require('../errors/not-found-err');
+const {
+  BadRequestErrorName, ConflictErrorName, ForbiddenErrorName,
+  NotFoundErrorName, UnauthorizedErrorName,
+  ValidationErrorName, CastErrorName, InternalServerErrorName,
+} = require('../errors/errorNames');
 
-const getMovies = (req, res) => {
+const getMovies = (req, res, next) => {
   const owner = req.user._id;
 
   Movie.find({ owner })
     .populate(['owner'])
     .then((movie) => res.send({ data: movie }))
     .catch((err) => errorHandler(err, res, {
-      ...defaultErrorMessages,
-      [NotFoundErrorCode]: 'Фильмы не найдены',
-      [InternalServerErrorCode]: 'Произошла ошибка при получении фильмов',
-    }));
+      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
+      [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
+      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
+      [NotFoundErrorName]: `Фильмы не найдены: ${err.message}`,
+      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
+      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
+      [CastErrorName]: `Ошибка в БД: ${err.message}`,
+      [InternalServerErrorName]: `Произошла ошибка сервера при получении фильмов: ${err.message}`,
+    }, next));
 };
 
 const deleteMovie = (req, res, next) => {
@@ -31,7 +40,7 @@ const deleteMovie = (req, res, next) => {
         return;
       }
 
-      if (movie.owner !== owner) {
+      if (movie.owner.toString() !== owner) {
         next(new ForbiddenError('Фильм не найден'));
         return;
       }
@@ -41,10 +50,15 @@ const deleteMovie = (req, res, next) => {
         });
     })
     .catch((err) => errorHandler(err, res, {
-      ...defaultErrorMessages,
-      [NotFoundErrorCode]: 'Фильмы не найдены',
-      [InternalServerErrorCode]: 'Произошла ошибка при удалении фильма',
-    }));
+      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
+      [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
+      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
+      [NotFoundErrorName]: `Фильмы не найдены: ${err.message}`,
+      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
+      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
+      [CastErrorName]: `Ошибка в БД: ${err.message}`,
+      [InternalServerErrorName]: `Произошла ошибка при удалении фильма: ${err.message}`,
+    }, next));
 };
 
 const createMovie = (req, res, next) => {
@@ -83,16 +97,17 @@ const createMovie = (req, res, next) => {
           res.send({ data: movie });
         });
     })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        next(new BadRequestError(`${Object.values(error.errors).map((e) => e.message).join(', ')}`));
-      } else {
-        errorHandler(error, res, {
-          ...defaultErrorMessages,
-          [NotFoundErrorCode]: 'Не найдено',
-          [InternalServerErrorCode]: 'Произошла ошибка при создании фильма',
-        });
-      }
+    .catch((err) => {
+      errorHandler(err, res, {
+        [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
+        [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
+        [ForbiddenErrorName]: `Запрещено: ${err.message}`,
+        [NotFoundErrorName]: `Фильм не найден: ${err.message}`,
+        [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
+        [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
+        [CastErrorName]: `Ошибка в БД: ${err.message}`,
+        [InternalServerErrorName]: `Произошла ошибка при создании фильма: ${err.message}`,
+      }, next);
     });
 };
 
