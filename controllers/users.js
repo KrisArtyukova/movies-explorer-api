@@ -4,31 +4,31 @@ const User = require('../models/user');
 const { Created } = require('../errors/errorCodes');
 const UnauthorizedError = require('../errors/unauthorized-err');
 const InternalServerError = require('../errors/internal-server-err');
-const { errorHandler } = require('../errors/errorHandler');
 const {
-  BadRequestErrorName,
-  ConflictErrorName,
-  ForbiddenErrorName,
-  NotFoundErrorName,
-  UnauthorizedErrorName,
   ValidationErrorName,
   CastErrorName,
-  InternalServerErrorName,
 } = require('../errors/errorNames');
+const ConflictError = require('../errors/conflict-err');
+const ValidationError = require('../errors/validation-err');
+const CastError = require('../errors/cast-err');
+const NotFoundError = require('../errors/not-found-err');
 
 const getUser = (req, res, next) => {
   User.findById(req.user._id)
-    .then((user) => res.send({ data: user }))
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Пользователь не найден: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка сервера при получении пользователя: ${err.message}`,
-    }, next));
+    .then((user) => {
+      if (user) {
+        res.send({ data: user });
+      } else {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+    })
+    .catch((err) => {
+      if (err.name === CastErrorName) {
+        next(new CastError(`Ошибка при запросе: ${err.message}`));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const createUser = (req, res, next) => {
@@ -46,33 +46,39 @@ const createUser = (req, res, next) => {
       res.status(Created);
       res.send({ data: { name: user.name, email: user.email } });
     })
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Такой email уже существует: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Пользователь не найден: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка сервера при создании пользователя: ${err.message}`,
-    }, next));
+    .catch((err) => {
+      if (err.code === 11000) {
+        next(new ConflictError(err.message));
+      } else if (err.name === ValidationErrorName) {
+        next(new ValidationError(`Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const updateUser = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, {
     name: req.body.name, email: req.body.email,
   }, { new: true, runValidators: true })
-    .then((user) => (res.send({ data: user })))
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Такой email уже существует: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Пользователь не найден: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка сервера при создании пользователя: ${err.message}`,
-    }, next));
+    .then((user) => {
+      if (user) {
+        res.send({ data: user });
+      } else {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+    })
+    .catch((err) => {
+      if (err.code === 11000) {
+        next(new ConflictError(err.message));
+      } else if (err.name === CastErrorName) {
+        next(new CastError(`Ошибка при запросе: ${err.message}`));
+      } else if (err.name === ValidationErrorName) {
+        next(new ValidationError(`Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const login = (req, res, next) => {
@@ -102,16 +108,13 @@ const login = (req, res, next) => {
 
       res.send({ token });
     })
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Конфликт БД: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Данные не найдены: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка сервера при создании пользователя: ${err.message}`,
-    }, next));
+    .catch((err) => {
+      if (err.name === CastErrorName) {
+        next(new CastError(`Ошибка при запросе: ${err.message}`));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports = {

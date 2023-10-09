@@ -17,12 +17,12 @@ mongoose.connect(DB_NAME, {
   useNewUrlParser: true,
 });
 // Apply the rate limiting middleware to all requests
-app.use(limiter);
 app.use(helmet());
 app.use(cors);
 app.use(bodyParser.json()); // для собирания JSON-формата
 app.use(bodyParser.urlencoded({ extended: true })); // для приёма веб-страниц внутри POST-запроса
 app.use(requestLogger); // подключаем логгер запросов
+app.use(limiter);
 
 app.get('/crash-test', () => {
   setTimeout(() => {
@@ -37,7 +37,7 @@ app.use(errorLogger); // подключаем логгер ошибок
 // обработчики ошибок
 app.use(errors()); // обработчик ошибок celebrate
 
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
   // если у ошибки нет статуса, выставляем 500
   const { statusCode = 500, message } = err;
 
@@ -49,6 +49,8 @@ app.use((err, req, res) => {
         ? 'На сервере произошла ошибка'
         : message,
     });
+
+  if (next) next();
 });
 
 app.listen(PORT, () => {

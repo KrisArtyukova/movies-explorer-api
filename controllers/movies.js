@@ -1,32 +1,35 @@
 const Movie = require('../models/movie');
-const { errorHandler } = require('../errors/errorHandler');
 const {
   Created,
 } = require('../errors/errorCodes');
 const ForbiddenError = require('../errors/forbidden-err');
 const NotFoundError = require('../errors/not-found-err');
 const {
-  BadRequestErrorName, ConflictErrorName, ForbiddenErrorName,
-  NotFoundErrorName, UnauthorizedErrorName,
-  ValidationErrorName, CastErrorName, InternalServerErrorName,
+  ValidationErrorName, CastErrorName,
 } = require('../errors/errorNames');
+const CastError = require('../errors/cast-err');
+const ValidationError = require('../errors/validation-err');
+const ConflictError = require('../errors/conflict-err');
 
 const getMovies = (req, res, next) => {
   const owner = req.user._id;
 
   Movie.find({ owner })
     .populate(['owner'])
-    .then((movie) => res.send({ data: movie }))
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Фильмы не найдены: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка сервера при получении фильмов: ${err.message}`,
-    }, next));
+    .then((movie) => {
+      if (movie) {
+        res.send({ data: movie });
+      } else {
+        next(new NotFoundError('Фильмы не найдены'));
+      }
+    })
+    .catch((err) => {
+      if (err.name === CastErrorName) {
+        next(new CastError(`Ошибка при запросе: ${err.message}`));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const deleteMovie = (req, res, next) => {
@@ -49,16 +52,7 @@ const deleteMovie = (req, res, next) => {
           res.status(200).send({ data: removedMovie });
         });
     })
-    .catch((err) => errorHandler(err, res, {
-      [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-      [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
-      [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-      [NotFoundErrorName]: `Фильмы не найдены: ${err.message}`,
-      [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-      [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-      [CastErrorName]: `Ошибка в БД: ${err.message}`,
-      [InternalServerErrorName]: `Произошла ошибка при удалении фильма: ${err.message}`,
-    }, next));
+    .catch((err) => next(err));
 };
 
 const createMovie = (req, res, next) => {
@@ -98,16 +92,13 @@ const createMovie = (req, res, next) => {
         });
     })
     .catch((err) => {
-      errorHandler(err, res, {
-        [BadRequestErrorName]: `Ошибочный запрос: ${err.message}`,
-        [ConflictErrorName]: `Конфликт сервера: ${err.message}`,
-        [ForbiddenErrorName]: `Запрещено: ${err.message}`,
-        [NotFoundErrorName]: `Фильм не найден: ${err.message}`,
-        [UnauthorizedErrorName]: `Отсутствует авторизация: ${err.message}`,
-        [ValidationErrorName]: `Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`,
-        [CastErrorName]: `Ошибка в БД: ${err.message}`,
-        [InternalServerErrorName]: `Произошла ошибка при создании фильма: ${err.message}`,
-      }, next);
+      if (err.name === ValidationErrorName) {
+        next(new ValidationError(`Неверные данные в запросе: ${Object.values(err.errors).map((e) => e.message).join(', ')}`));
+      } else if (err.code === 11000) {
+        next(new ConflictError(err.message));
+      } else {
+        next(err);
+      }
     });
 };
 
