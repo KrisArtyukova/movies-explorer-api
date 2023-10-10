@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { Created } = require('../errors/errorCodes');
 const UnauthorizedError = require('../errors/unauthorized-err');
-const InternalServerError = require('../errors/internal-server-err');
 const {
   ValidationErrorName,
   CastErrorName,
@@ -88,19 +87,17 @@ const login = (req, res, next) => {
     .select('+password')
     .then((user) => {
       if (!user) {
-        next(new UnauthorizedError('Неправильные почта или пароль'));
+        return next(new UnauthorizedError('Неправильные почта или пароль'));
       } else {
         return bcrypt.compare(password, user.password)
           .then((matched) => {
             if (!matched) {
-              next(new UnauthorizedError('Неправильные почта или пароль'));
+              return next(new UnauthorizedError('Неправильные почта или пароль'));
             } else {
               return user;
             }
-            return new InternalServerError('Ошибка');
           });
       }
-      return new InternalServerError('Ошибка');
     })
     .then((user) => {
       const { NODE_ENV, JWT_SECRET } = process.env;
