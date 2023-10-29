@@ -16,7 +16,7 @@ const getUser = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
       if (user) {
-        res.send({ data: user });
+        res.send({ user });
       } else {
         next(new NotFoundError('Пользователь не найден'));
       }
@@ -62,7 +62,7 @@ const updateUser = (req, res, next) => {
   }, { new: true, runValidators: true })
     .then((user) => {
       if (user) {
-        res.send({ data: user });
+        res.send({ user });
       } else {
         next(new NotFoundError('Пользователь не найден'));
       }
@@ -103,7 +103,7 @@ const login = (req, res, next) => {
       const { NODE_ENV, JWT_SECRET } = process.env;
       const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '10d' });
 
-      res.send({ token });
+      res.send({ token, user: { email: user.email, name: user.name, _id: user._id } });
     })
     .catch((err) => {
       if (err.name === CastErrorName) {

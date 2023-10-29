@@ -25,12 +25,6 @@ const movieSchema = new mongoose.Schema({
   image: {
     type: String,
     required: true,
-    validate: {
-      validator(v) {
-        return urlValidationPattern.test(v);
-      },
-      message: (props) => `${props.value} некорректная ссылка!`,
-    },
   },
   trailerLink: {
     type: String,
@@ -45,12 +39,6 @@ const movieSchema = new mongoose.Schema({
   thumbnail: {
     type: String,
     required: true,
-    validate: {
-      validator(v) {
-        return urlValidationPattern.test(v);
-      },
-      message: (props) => `${props.value} некорректная ссылка!`,
-    },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

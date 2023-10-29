@@ -31,11 +31,11 @@ const createMovieValidation = celebrate({
     duration: Joi.number().required(),
     year: Joi.string().required(),
     description: Joi.string().required(),
-    image: Joi.string().pattern(urlValidationPattern),
+    image: Joi.string(),
     trailerLink: Joi.string().pattern(urlValidationPattern),
     nameRU: Joi.string().required(),
     nameEN: Joi.string().required(),
-    thumbnail: Joi.string().pattern(urlValidationPattern),
+    thumbnail: Joi.string(),
     movieId: Joi.number().required(),
   }),
 });

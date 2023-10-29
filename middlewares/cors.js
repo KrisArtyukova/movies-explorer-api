@@ -3,8 +3,7 @@ module.exports = (req, res, next) => {
   const allowedCors = [
     'http://kris-diplom.nomoredomainsrocks.ru',
     'https://kris-diplom.nomoredomainsrocks.ru',
-    'localhost:3000',
-    'http://localhost:3001',
+    'http://localhost:3000',
   ];
 
   const { origin } = req.headers; // Сохраняем источник запроса в переменную origin
